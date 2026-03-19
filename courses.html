@@ -147,7 +147,7 @@
 
     /* "Add Week N" button — prominent, sits above the week list */
     .add-week-btn {
-      width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
       padding: 13px; margin-bottom: 4px;
       border: 1px solid var(--blue); border-radius: var(--radius-sm);
       background: var(--blue-dim); color: var(--blue);
@@ -155,6 +155,42 @@
       transition: background 0.15s;
     }
     .add-week-btn:active { background: rgba(96,165,250,0.22); }
+
+    /* "Skip Week N" button — secondary */
+    .skip-week-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 13px 16px; margin-bottom: 4px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: transparent; color: var(--text-dim);
+      font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    .skip-week-btn:active { background: var(--surface2); }
+
+    /* Skipped week section */
+    .week-section-skipped { opacity: 0.55; }
+    .week-skipped-note { font-style: italic; font-size: 12px; color: var(--text-dim); padding: 6px 0 2px; }
+    .restore-week-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+      font-family: inherit; font-size: 11px; font-weight: 500; padding: 3px 10px;
+      border-radius: 6px; cursor: pointer;
+    }
+
+    /* Cancelled item row */
+    .task-row-cancelled { opacity: 0.45; pointer-events: none; }
+    .task-row-cancelled .task-label { text-decoration: line-through; }
+    .task-type-cancelled { background: var(--red-dim); color: var(--red); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .cancel-item-btn {
+      background: transparent; border: none; color: var(--text-dimmer);
+      padding: 4px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center;
+      opacity: 0.7; pointer-events: auto;
+    }
+    .cancel-item-btn:active { opacity: 1; color: var(--red); }
+    .restore-item-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+      font-family: inherit; font-size: 11px; padding: 2px 8px; border-radius: 6px;
+      cursor: pointer; flex-shrink: 0; pointer-events: auto;
+    }
 
     /* ── Section label (for Tasks section) ── */
     .section-label {
@@ -426,6 +462,7 @@ function migrate(courses) {
     if (!c.lectureSlots)    c.lectureSlots    = [];
     // Ensure each item has expected fields
     c.weeks.forEach(w => w.items.forEach(item => {
+      if (!('cancelled' in item)) item.cancelled = false;
       if (item.type === 'lecture') {
         if (!('date'        in item)) item.date        = null;
         if (!('minutesDone' in item)) item.minutesDone = 0;
@@ -452,7 +489,9 @@ const TRASH_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" s
 const EDIT_SVG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const EYE_SVG   = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_OFF   = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-const PLUS_SVG  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const PLUS_SVG   = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const SKIP_SVG   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
+const CANCEL_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 const CAL_SVG   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -490,7 +529,7 @@ function renderList() {
   }
 
   const html = state.courses.map(c => {
-    const allItems = c.weeks.flatMap(w => w.items);
+    const allItems = c.weeks.flatMap(w => w.items).filter(i => !i.cancelled);
     const totalW = allItems.length;
     const doneW  = allItems.filter(i => i.done).length;
     const totalT = c.customTasks.length;
@@ -509,7 +548,7 @@ function renderList() {
     const today = new Date(); today.setHours(0,0,0,0);
     let closestDue = null;
     c.weeks.forEach(w => w.items.forEach(item => {
-      if (item.type === 'exercise' && item.dueDate && !item.done) {
+      if (item.type === 'exercise' && item.dueDate && !item.done && !item.cancelled) {
         const d = new Date(item.dueDate + 'T00:00:00');
         if (closestDue === null || d < closestDue) closestDue = d;
       }
@@ -611,9 +650,12 @@ function renderDetail() {
       </div>`;
   } else {
     html += `
-      <div style="margin-top:16px">
+      <div style="margin-top:16px; display:flex; gap:8px;">
         <button class="add-week-btn" onclick="addWeek('${course.id}')">
           ${PLUS_SVG} Add Week ${nextWeekNum}
+        </button>
+        <button class="skip-week-btn" onclick="skipWeek('${course.id}')" title="No class this week — advances dates without adding items">
+          ${SKIP_SVG} Skip
         </button>
       </div>`;
 
@@ -623,12 +665,47 @@ function renderDetail() {
       html += `<p style="font-size:13px;color:var(--text-dimmer);padding:12px 0 4px;text-align:center">No weeks added yet — tap the button above.</p>`;
     } else {
       html += weeksDesc.map(week => {
-        const total   = week.items.length;
-        const done    = week.items.filter(i => i.done).length;
-        const visible = hide ? week.items.filter(i => !i.done) : week.items;
-        const hidden  = total - visible.length;
+        // ── Skipped week ───────────────────────────────────────────────────
+        if (week.skipped) {
+          return `
+            <div class="week-section week-section-skipped">
+              <div class="week-section-header">
+                <span class="week-section-title">Week ${week.num}</span>
+                <button class="restore-week-btn" onclick="restoreWeek('${course.id}',${week.num})">Restore</button>
+              </div>
+              <p class="week-skipped-note">No class this week</p>
+            </div>`;
+        }
+
+        // ── Active week ────────────────────────────────────────────────────
+        const activeItems    = week.items.filter(i => !i.cancelled);
+        const cancelledItems = week.items.filter(i => i.cancelled);
+        const total   = activeItems.length;
+        const done    = activeItems.filter(i => i.done).length;
+        const visibleActive = hide ? activeItems.filter(i => !i.done) : activeItems;
+        const hidden  = activeItems.length - visibleActive.length;
+        // Cancelled items always shown
+        const visible = [...visibleActive, ...cancelledItems];
 
         const rows = visible.map(item => {
+          // ── Cancelled item ──────────────────────────────────────────────
+          if (item.cancelled) {
+            const dateLine = item.date
+              ? `<span class="task-date">${CAL_SVG} ${formatDate(item.date)}</span>`
+              : (item.dueDate ? `<span class="task-date">${CAL_SVG} ${formatDate(item.dueDate)}</span>` : '');
+            return `
+              <div class="task-row task-row-cancelled" data-item-id="${item.id}">
+                <div class="task-check"></div>
+                <div class="task-info">
+                  <span class="task-label">${escHtml(item.label)}</span>
+                  ${dateLine}
+                </div>
+                <span class="task-type-cancelled">Cancelled</span>
+                <button class="restore-item-btn" onclick="restoreItem(event,'${course.id}',${week.num},'${item.id}')">Restore</button>
+              </div>`;
+          }
+
+          // ── Lecture ─────────────────────────────────────────────────────
           if (item.type === 'lecture') {
             const dateLine = item.date
               ? `<span class="task-date">${CAL_SVG} ${formatDate(item.date)}</span>`
@@ -652,27 +729,30 @@ function renderDetail() {
                   ${lecProgBar}
                 </div>
                 <span class="task-type-chip task-type-lecture">Lecture</span>
-              </div>`;
-          } else {
-            const dueLine = item.dueDate
-              ? `<button class="due-date-btn has-date" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">${CAL_SVG} ${formatDate(item.dueDate)}</button>`
-              : `<button class="due-date-btn" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">+ due date</button>`;
-            const exPct = item.pct || 0;
-            const exProgBar = `<button class="item-prog" onclick="openSetExercisePct(event,'${course.id}',${week.num},'${item.id}')">
-              <div class="item-prog-track"><div class="item-prog-fill-ex" style="width:${exPct}%"></div></div>
-              <span class="item-prog-text">${exPct}%</span>
-            </button>`;
-            return `
-              <div class="task-row ${item.done ? 'checked' : ''}" data-item-id="${item.id}" onclick="toggleItem('${course.id}',${week.num},'${item.id}')">
-                <div class="task-check">${CHECK_SVG}</div>
-                <div class="task-info">
-                  <span class="task-label">${escHtml(item.label)}</span>
-                  ${dueLine}
-                  ${exProgBar}
-                </div>
-                <span class="task-type-chip task-type-exercise">Exercise</span>
+                <button class="cancel-item-btn" onclick="cancelItem(event,'${course.id}',${week.num},'${item.id}')" title="Mark as not happening">${CANCEL_SVG}</button>
               </div>`;
           }
+
+          // ── Exercise ────────────────────────────────────────────────────
+          const dueLine = item.dueDate
+            ? `<button class="due-date-btn has-date" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">${CAL_SVG} ${formatDate(item.dueDate)}</button>`
+            : `<button class="due-date-btn" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">+ due date</button>`;
+          const exPct = item.pct || 0;
+          const exProgBar = `<button class="item-prog" onclick="openSetExercisePct(event,'${course.id}',${week.num},'${item.id}')">
+            <div class="item-prog-track"><div class="item-prog-fill-ex" style="width:${exPct}%"></div></div>
+            <span class="item-prog-text">${exPct}%</span>
+          </button>`;
+          return `
+            <div class="task-row ${item.done ? 'checked' : ''}" data-item-id="${item.id}" onclick="toggleItem('${course.id}',${week.num},'${item.id}')">
+              <div class="task-check">${CHECK_SVG}</div>
+              <div class="task-info">
+                <span class="task-label">${escHtml(item.label)}</span>
+                ${dueLine}
+                ${exProgBar}
+              </div>
+              <span class="task-type-chip task-type-exercise">Exercise</span>
+              <button class="cancel-item-btn" onclick="cancelItem(event,'${course.id}',${week.num},'${item.id}')" title="Mark as not happening">${CANCEL_SVG}</button>
+            </div>`;
         }).join('');
 
         const hiddenNote = hidden > 0
@@ -807,6 +887,47 @@ function addWeek(courseId) {
     const first = document.querySelector('.week-section');
     if (first) first.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 60);
+}
+
+// ─── Skip / restore week ──────────────────────────────────────────────────────
+
+function skipWeek(courseId) {
+  const course  = state.courses.find(c => c.id === courseId);
+  const nextNum = course.weeks.length + 1;
+  course.weeks.push({ num: nextNum, skipped: true, items: [] });
+  save(state.courses);
+  render();
+}
+
+function restoreWeek(courseId, weekNum) {
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  week.skipped = false;
+  save(state.courses);
+  render();
+}
+
+// ─── Cancel / restore individual item ────────────────────────────────────────
+
+function cancelItem(evt, courseId, weekNum, itemId) {
+  evt.stopPropagation();
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  item.cancelled = true;
+  item.done = false;
+  save(state.courses);
+  render();
+}
+
+function restoreItem(evt, courseId, weekNum, itemId) {
+  evt.stopPropagation();
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  item.cancelled = false;
+  save(state.courses);
+  render();
 }
 
 // ─── Exercise due date ────────────────────────────────────────────────────────
