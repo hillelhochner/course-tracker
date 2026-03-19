@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0d1117"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Courses"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <link rel="manifest" href="/courses-manifest.json"/>
+  <link rel="apple-touch-icon" href="/icon-192.png"/>
+  <title>Course Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface2:    #1c2230;
+      --border:      #2a3340;
+      --text:        #e8e3da;
+      --text-dim:    #6e7a8a;
+      --text-dimmer: #3d4a58;
+      --amber:       #f59e0b;
+      --amber-dim:   rgba(245,158,11,0.12);
+      --green:       #10b981;
+      --green-dim:   rgba(16,185,129,0.12);
+      --blue:        #60a5fa;
+      --blue-dim:    rgba(96,165,250,0.12);
+      --red:         #f87171;
+      --red-dim:     rgba(248,113,113,0.1);
+      --safe-top:    env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --radius:      16px;
+      --radius-sm:   10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100%; min-height: 100dvh;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body::before {
+      content: ''; display: block; height: var(--safe-top);
+      background: var(--bg); position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      position: sticky; top: 0;
+      padding: calc(var(--safe-top) + 14px) 20px 14px;
+      background: rgba(13,17,23,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px; z-index: 50;
+    }
+    .topbar-title {
+      font-family: 'DM Serif Display', serif; font-size: 20px;
+      letter-spacing: 0.01em; flex: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .topbar-back {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; font-weight: 500; color: var(--amber);
+      cursor: pointer; padding: 6px 0; user-select: none; flex-shrink: 0;
+    }
+    .topbar-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+
+    /* ── Icon buttons ── */
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .icon-btn:active { background: var(--surface2); }
+    .icon-btn.active { color: var(--amber); }
+
+    /* ── Content ── */
+    .content {
+      padding: 16px 16px calc(var(--safe-bottom) + 80px);
+      max-width: 520px; margin: 0 auto;
+    }
+
+    /* ── Course cards ── */
+    .course-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    }
+    .course-card:active { background: var(--surface2); border-color: var(--amber); }
+    .course-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .course-name { font-weight: 600; font-size: 16px; line-height: 1.3; flex: 1; }
+
+    .badge {
+      flex-shrink: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+      padding: 3px 8px; border-radius: 20px; white-space: nowrap;
+    }
+    .badge-done    { background: var(--green-dim); color: var(--green); }
+    .badge-todo    { background: var(--amber-dim); color: var(--amber); }
+    .badge-neutral { background: var(--surface2);  color: var(--text-dim); }
+
+    .course-meta { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .meta-chip {
+      font-size: 12px; color: var(--text-dim);
+      background: var(--surface2); border-radius: 6px; padding: 2px 8px;
+    }
+
+    .due-chip {
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+      white-space: nowrap; margin-top: 8px; display: inline-block;
+    }
+    .due-chip-overdue { background: var(--red-dim);   color: var(--red); }
+    .due-chip-today   { background: var(--amber-dim); color: var(--amber); }
+    .due-chip-soon    { background: var(--blue-dim);  color: var(--blue); }
+    .due-chip-later   { background: var(--surface2);  color: var(--text-dim); }
+
+    .week-progress { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+    .week-bar-track { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+    .week-bar-fill  { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.3s ease; }
+    .week-bar-text  { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+    /* ── Week section header ── */
+    .week-section {
+      margin-top: 24px;
+    }
+    .week-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .week-section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-dimmer);
+    }
+    .week-section-badge {
+      font-size: 11px; color: var(--text-dimmer); font-weight: 500;
+    }
+
+    /* "Add Week N" button — prominent, sits above the week list */
+    .add-week-btn {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px; margin-bottom: 4px;
+      border: 1px solid var(--blue); border-radius: var(--radius-sm);
+      background: var(--blue-dim); color: var(--blue);
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .add-week-btn:active { background: rgba(96,165,250,0.22); }
+
+    /* ── Section label (for Tasks section) ── */
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-dimmer);
+      margin: 24px 0 10px;
+    }
+
+    /* ── Task rows ── */
+    .task-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); margin-bottom: 6px;
+      cursor: pointer; user-select: none; min-height: 48px;
+      transition: background 0.12s;
+    }
+    .task-row:active { background: var(--surface2); }
+
+    .task-check {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .task-row.checked .task-check { border-color: var(--green); background: var(--green); }
+    .task-check svg { opacity: 0; transition: opacity 0.15s; }
+    .task-row.checked .task-check svg { opacity: 1; }
+
+    /* Task info: label + optional date stacked */
+    .task-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+    .task-label {
+      font-size: 14px; font-weight: 500; line-height: 1.4;
+      transition: color 0.2s;
+    }
+    /* For custom task rows (no .task-info wrapper), keep flex:1 on the label */
+    .task-row > .task-label { flex: 1; }
+
+    .task-row.checked .task-label {
+      color: var(--text-dim);
+      text-decoration: line-through; text-decoration-color: var(--text-dimmer);
+    }
+
+    /* Lecture date — static, auto-calculated */
+    .task-date {
+      font-size: 11px; color: var(--text-dim);
+    }
+    .task-row.checked .task-date { color: var(--text-dimmer); }
+
+    /* Exercise due date — tappable button */
+    .due-date-btn {
+      font-size: 11px; font-family: inherit; cursor: pointer;
+      background: transparent; border: 1px dashed var(--border);
+      color: var(--text-dimmer); border-radius: 4px; padding: 1px 6px;
+      transition: border-color 0.15s, color 0.15s; align-self: flex-start;
+    }
+    .due-date-btn:active { border-color: var(--amber); color: var(--amber); }
+    .due-date-btn.has-date {
+      border-style: solid; border-color: var(--border); color: var(--text-dim);
+    }
+
+    .task-type-chip {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+      padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+    }
+    .task-type-lecture  { background: var(--blue-dim);  color: var(--blue); }
+    .task-type-exercise { background: var(--amber-dim); color: var(--amber); }
+
+    .task-delete {
+      width: 32px; height: 32px; border: none; background: transparent;
+      color: var(--text-dimmer); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
+    }
+    .task-delete:active { color: var(--red); background: var(--red-dim); }
+
+    /* ── Add row button ── */
+    .add-task-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; border: 1px dashed var(--border);
+      border-radius: var(--radius-sm); cursor: pointer; color: var(--text-dim);
+      font-size: 14px; font-family: inherit; background: transparent; width: 100%;
+      transition: border-color 0.15s, color 0.15s; min-height: 48px; margin-top: 4px;
+    }
+    .add-task-btn:active { border-color: var(--amber); color: var(--amber); }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; bottom: calc(var(--safe-bottom) + 24px); right: 20px;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--amber); color: #0d1117; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.35);
+      transition: transform 0.15s, box-shadow 0.15s; z-index: 40;
+    }
+    .fab:active { transform: scale(0.93); box-shadow: 0 2px 10px rgba(245,158,11,0.25); }
+
+    /* ── Modal overlay ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      z-index: 200; display: flex; align-items: flex-end;
+      padding-bottom: var(--safe-bottom);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .sheet {
+      background: var(--surface); border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0; padding: 0 20px 28px;
+      width: 100%; max-width: 520px; margin: 0 auto;
+      transform: translateY(30px);
+      transition: transform 0.25s cubic-bezier(0.22,1,0.36,1);
+      max-height: 85dvh; overflow-y: auto;
+    }
+    .overlay.open .sheet { transform: translateY(0); }
+    .sheet-handle {
+      width: 36px; height: 4px; background: var(--border); border-radius: 2px;
+      margin: 12px auto 20px; position: sticky; top: 0;
+    }
+    .sheet-title { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 20px; }
+
+    /* ── Form fields ── */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 6px;
+    }
+    .field input, .field textarea, .field select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: inherit; font-size: 15px; padding: 11px 14px;
+      outline: none; transition: border-color 0.15s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .field input[type="date"] { color-scheme: dark; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--amber); }
+    .field-hint { font-size: 11px; color: var(--text-dimmer); margin-top: 5px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Lecture slots section inside the form */
+    .lecture-slots-section {
+      border-top: 1px solid var(--border); margin: 4px 0 16px; padding-top: 14px;
+    }
+    .lecture-slots-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 12px;
+    }
+
+    .btn-primary {
+      width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none;
+      background: var(--amber); color: #0d1117; font-family: inherit;
+      font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-danger {
+      width: 100%; padding: 12px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: transparent; color: var(--red);
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+      margin-top: 10px; transition: background 0.15s;
+    }
+    .btn-danger:active { background: var(--red-dim); }
+
+    /* ── Empty / notice ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+    .empty-icon  { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-state h3 { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); margin-bottom: 8px; }
+    .empty-state p  { font-size: 14px; line-height: 1.6; }
+    .hidden-notice  { font-size: 12px; color: var(--text-dimmer); text-align: center; padding: 6px 0 4px; }
+
+    /* ── Item inline progress (lecture minutes / exercise %) ── */
+    .item-prog {
+      display: flex; align-items: center; gap: 6px;
+      background: transparent; border: none; padding: 0;
+      font-family: inherit; cursor: pointer; align-self: flex-start; width: 100%;
+    }
+    .item-prog-track { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .item-prog-fill-lec  { height: 100%; background: var(--blue);  border-radius: 2px; transition: width 0.3s; }
+    .item-prog-fill-ex   { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.3s; }
+    .item-prog-text { font-size: 11px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+    .item-prog:active .item-prog-text { color: var(--amber); }
+    .task-row.checked .item-prog-text { color: var(--text-dimmer); }
+
+    /* ── Course card aggregate progress bars ── */
+    .card-prog-section { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .card-prog-line { display: flex; align-items: center; gap: 8px; }
+    .card-prog-track { flex: 1; height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+    .card-prog-fill-lec { height: 100%; background: var(--blue);  border-radius: 2px; transition: width 0.3s; }
+    .card-prog-fill-ex  { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.3s; }
+    .card-prog-label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+    /* ── Checkbox pop animation ── */
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    .task-row.just-checked .task-check { animation: pop 0.25s ease; }
+  </style>
+</head>
+<body>
+
+<div id="topbar"></div>
+<div class="content" id="content"></div>
+
+<button class="fab" id="fab" aria-label="Add">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div id="sheet-content"></div>
+  </div>
+</div>
+
+<script>
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function save(courses) {
+  localStorage.setItem('courses-v1', JSON.stringify(courses));
+}
+
+function load() {
+  try { return JSON.parse(localStorage.getItem('courses-v1')) || []; }
+  catch { return []; }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// Migrate old data formats to current shape
+function migrate(courses) {
+  return courses.map(c => {
+    // Old format: had top-level lectures[], exercises[], currentWeek
+    if (!c.weeks) {
+      const oldLecs = c.lectures || [];
+      const oldExs  = c.exercises || [];
+      const items = [
+        ...oldLecs.map(l => ({ id: l.id, type: 'lecture',  label: l.name || 'Lecture', done: l.watched || false, date: null })),
+        ...oldExs.map(e  => ({ id: e.id, type: 'exercise', label: e.label || 'Exercise', done: e.completedWeeks && e.completedWeeks.length > 0, dueDate: null }))
+      ];
+      c.weeklyLectures  = oldLecs.length || 0;
+      c.weeklyExercises = oldExs.length  || 0;
+      c.weeks = items.length > 0 ? [{ num: 1, items }] : [];
+      delete c.lectures; delete c.exercises; delete c.currentWeek; delete c.lectureSchedule;
+    }
+    if (!c.customTasks)     c.customTasks     = [];
+    if (!c.weeklyLectures)  c.weeklyLectures  = 0;
+    if (!c.weeklyExercises) c.weeklyExercises = 0;
+    if (!c.lectureSlots)    c.lectureSlots    = [];
+    // Ensure each item has expected fields
+    c.weeks.forEach(w => w.items.forEach(item => {
+      if (item.type === 'lecture') {
+        if (!('date'        in item)) item.date        = null;
+        if (!('minutesDone' in item)) item.minutesDone = 0;
+        if (!('duration'    in item)) item.duration    = c.lectureDuration || 0;
+      }
+      if (item.type === 'exercise') {
+        if (!('dueDate' in item)) item.dueDate = null;
+        if (!('pct'     in item)) item.pct     = 0;
+      }
+    }));
+    return c;
+  });
+}
+
+// Count how many items of a given type exist across all weeks
+function countType(course, type) {
+  return course.weeks.reduce((n, w) => n + w.items.filter(i => i.type === type).length, 0);
+}
+
+// SVG icons
+const CHECK_SVG = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5.5,10.5 11,3"/></svg>`;
+const BACK_SVG  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+const TRASH_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+const EDIT_SVG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const EYE_SVG   = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF   = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+const PLUS_SVG  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const CAL_SVG   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let state = {
+  view: 'list',
+  courseId: null,
+  hideCompleted: false,
+  courses: migrate(load())
+};
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+
+function render() {
+  if (state.view === 'list') renderList();
+  else renderDetail();
+}
+
+function renderList() {
+  document.getElementById('topbar').innerHTML = `
+    <div class="topbar">
+      <span class="topbar-title">My Courses</span>
+      <div class="topbar-actions"></div>
+    </div>`;
+  document.getElementById('fab').style.display = 'flex';
+
+  if (state.courses.length === 0) {
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h3>No courses yet</h3>
+        <p>Tap <strong>+</strong> to add your first course.</p>
+      </div>`;
+    return;
+  }
+
+  const html = state.courses.map(c => {
+    const allItems = c.weeks.flatMap(w => w.items);
+    const totalW = allItems.length;
+    const doneW  = allItems.filter(i => i.done).length;
+    const totalT = c.customTasks.length;
+    const doneT  = c.customTasks.filter(t => t.completed).length;
+    const totalAll = totalW + totalT;
+    const doneAll  = doneW  + doneT;
+    const remaining = totalAll - doneAll;
+    const pct = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 100;
+
+    let badge;
+    if (totalAll === 0)       badge = `<span class="badge badge-neutral">No tasks</span>`;
+    else if (remaining === 0) badge = `<span class="badge badge-done">All done ✓</span>`;
+    else                      badge = `<span class="badge badge-todo">${remaining} left</span>`;
+
+    // Closest upcoming (or overdue) exercise due date
+    const today = new Date(); today.setHours(0,0,0,0);
+    let closestDue = null;
+    c.weeks.forEach(w => w.items.forEach(item => {
+      if (item.type === 'exercise' && item.dueDate && !item.done) {
+        const d = new Date(item.dueDate + 'T00:00:00');
+        if (closestDue === null || d < closestDue) closestDue = d;
+      }
+    }));
+
+    let dueChip = '';
+    if (closestDue !== null) {
+      const diffMs   = closestDue - today;
+      const diffDays = Math.round(diffMs / 86400000);
+      let cls, label;
+      if      (diffDays < 0)  { cls = 'due-chip-overdue'; label = `Overdue by ${-diffDays} day${-diffDays !== 1 ? 's' : ''}`; }
+      else if (diffDays === 0){ cls = 'due-chip-today';   label = 'Due today'; }
+      else if (diffDays <= 7) { cls = 'due-chip-soon';    label = `Due in ${diffDays} day${diffDays !== 1 ? 's' : ''}`; }
+      else                    { cls = 'due-chip-later';   label = `Next exercise in ${diffDays} days`; }
+      dueChip = `<span class="due-chip ${cls}">${label}</span>`;
+    }
+
+    const chips = [];
+    if (c.weeklyLectures  > 0) chips.push(`<span class="meta-chip">🎓 ${c.weeklyLectures} lecture${c.weeklyLectures !== 1 ? 's' : ''}/week</span>`);
+    if (c.weeklyExercises > 0) chips.push(`<span class="meta-chip">📝 ${c.weeklyExercises} exercise${c.weeklyExercises !== 1 ? 's' : ''}/week</span>`);
+    if (c.weeks.length    > 0) chips.push(`<span class="meta-chip">Week ${c.weeks[c.weeks.length-1].num}</span>`);
+
+    const progress = totalAll > 0 ? `
+      <div class="week-progress">
+        <div class="week-bar-track"><div class="week-bar-fill" style="width:${pct}%"></div></div>
+        <span class="week-bar-text">${doneAll}/${totalAll} done</span>
+      </div>` : '';
+
+    // Aggregate lecture minutes progress
+    const allLecs = allItems.filter(i => i.type === 'lecture');
+    const allExs  = allItems.filter(i => i.type === 'exercise');
+    let lecBar = '', exBar = '';
+    const totalMin = allLecs.reduce((s, i) => s + (i.duration || 0), 0);
+    if (totalMin > 0) {
+      const doneMin = allLecs.reduce((s, i) => s + (i.minutesDone || 0), 0);
+      const lecPct  = Math.min(100, Math.round((doneMin / totalMin) * 100));
+      lecBar = `
+        <div class="card-prog-line">
+          <div class="card-prog-track"><div class="card-prog-fill-lec" style="width:${lecPct}%"></div></div>
+          <span class="card-prog-label">🎓 ${doneMin} / ${totalMin} min</span>
+        </div>`;
+    }
+    if (allExs.length > 0) {
+      const avgPct = Math.round(allExs.reduce((s, i) => s + (i.pct || 0), 0) / allExs.length);
+      exBar = `
+        <div class="card-prog-line">
+          <div class="card-prog-track"><div class="card-prog-fill-ex" style="width:${avgPct}%"></div></div>
+          <span class="card-prog-label">📝 ${avgPct}% avg</span>
+        </div>`;
+    }
+    const aggBars = (lecBar || exBar) ? `<div class="card-prog-section">${lecBar}${exBar}</div>` : '';
+
+    return `
+      <div class="course-card" onclick="openCourse('${c.id}')">
+        <div class="course-card-header">
+          <span class="course-name">${escHtml(c.name)}</span>
+          ${badge}
+        </div>
+        ${chips.length ? `<div class="course-meta">${chips.join('')}</div>` : ''}
+        ${dueChip}
+        ${aggBars}
+        ${progress}
+      </div>`;
+  }).join('');
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderDetail() {
+  const course = state.courses.find(c => c.id === state.courseId);
+  if (!course) { state.view = 'list'; render(); return; }
+
+  const hide = state.hideCompleted;
+  const nextWeekNum = course.weeks.length + 1;
+  const hasTemplate = course.weeklyLectures > 0 || course.weeklyExercises > 0;
+
+  document.getElementById('topbar').innerHTML = `
+    <div class="topbar">
+      <div class="topbar-back" onclick="goBack()">${BACK_SVG} Courses</div>
+      <span class="topbar-title" style="font-size:16px">${escHtml(course.name)}</span>
+      <div class="topbar-actions">
+        <button class="icon-btn ${hide ? 'active' : ''}" onclick="toggleHide()" title="${hide ? 'Show all' : 'Hide done'}">${hide ? EYE_OFF : EYE_SVG}</button>
+        <button class="icon-btn" onclick="openEditCourse('${course.id}')" title="Edit course">${EDIT_SVG}</button>
+      </div>
+    </div>`;
+
+  document.getElementById('fab').style.display = 'none';
+
+  let html = '';
+
+  // ── Weekly sections (newest first) ──────────────────────────────────────
+  if (!hasTemplate && course.weeks.length === 0) {
+    html += `
+      <div style="padding: 24px 0 8px">
+        <p style="font-size:14px;color:var(--text-dim);line-height:1.6">
+          This course has no weekly template yet.<br>
+          Tap <strong>Edit</strong> to set how many lectures and exercises per week.
+        </p>
+      </div>`;
+  } else {
+    html += `
+      <div style="margin-top:16px">
+        <button class="add-week-btn" onclick="addWeek('${course.id}')">
+          ${PLUS_SVG} Add Week ${nextWeekNum}
+        </button>
+      </div>`;
+
+    const weeksDesc = [...course.weeks].reverse();
+
+    if (weeksDesc.length === 0) {
+      html += `<p style="font-size:13px;color:var(--text-dimmer);padding:12px 0 4px;text-align:center">No weeks added yet — tap the button above.</p>`;
+    } else {
+      html += weeksDesc.map(week => {
+        const total   = week.items.length;
+        const done    = week.items.filter(i => i.done).length;
+        const visible = hide ? week.items.filter(i => !i.done) : week.items;
+        const hidden  = total - visible.length;
+
+        const rows = visible.map(item => {
+          if (item.type === 'lecture') {
+            const dateLine = item.date
+              ? `<span class="task-date">${CAL_SVG} ${formatDate(item.date)}</span>`
+              : '';
+            const dur = item.duration || 0;
+            const minDone = item.minutesDone || 0;
+            const lecProgBar = (() => {
+              const p = dur > 0 ? Math.min(100, Math.round((minDone / dur) * 100)) : 0;
+              const text = dur > 0 ? `${minDone} / ${dur} min` : `${minDone} min`;
+              return `<button class="item-prog" onclick="openSetLectureProgress(event,'${course.id}',${week.num},'${item.id}')">
+                <div class="item-prog-track"><div class="item-prog-fill-lec" style="width:${p}%"></div></div>
+                <span class="item-prog-text">${text}</span>
+              </button>`;
+            })();
+            return `
+              <div class="task-row ${item.done ? 'checked' : ''}" data-item-id="${item.id}" onclick="toggleItem('${course.id}',${week.num},'${item.id}')">
+                <div class="task-check">${CHECK_SVG}</div>
+                <div class="task-info">
+                  <span class="task-label">${escHtml(item.label)}</span>
+                  ${dateLine}
+                  ${lecProgBar}
+                </div>
+                <span class="task-type-chip task-type-lecture">Lecture</span>
+              </div>`;
+          } else {
+            const dueLine = item.dueDate
+              ? `<button class="due-date-btn has-date" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">${CAL_SVG} ${formatDate(item.dueDate)}</button>`
+              : `<button class="due-date-btn" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">+ due date</button>`;
+            const exPct = item.pct || 0;
+            const exProgBar = `<button class="item-prog" onclick="openSetExercisePct(event,'${course.id}',${week.num},'${item.id}')">
+              <div class="item-prog-track"><div class="item-prog-fill-ex" style="width:${exPct}%"></div></div>
+              <span class="item-prog-text">${exPct}%</span>
+            </button>`;
+            return `
+              <div class="task-row ${item.done ? 'checked' : ''}" data-item-id="${item.id}" onclick="toggleItem('${course.id}',${week.num},'${item.id}')">
+                <div class="task-check">${CHECK_SVG}</div>
+                <div class="task-info">
+                  <span class="task-label">${escHtml(item.label)}</span>
+                  ${dueLine}
+                  ${exProgBar}
+                </div>
+                <span class="task-type-chip task-type-exercise">Exercise</span>
+              </div>`;
+          }
+        }).join('');
+
+        const hiddenNote = hidden > 0
+          ? `<p class="hidden-notice">${hidden} completed item${hidden !== 1 ? 's' : ''} hidden</p>` : '';
+
+        return `
+          <div class="week-section">
+            <div class="week-section-header">
+              <span class="week-section-title">Week ${week.num}</span>
+              <span class="week-section-badge">${done}/${total} done</span>
+            </div>
+            ${rows}
+            ${hiddenNote}
+          </div>`;
+      }).join('');
+    }
+  }
+
+  // ── Custom Tasks ────────────────────────────────────────────────────────
+  html += `<div class="section-label">Tasks</div>`;
+
+  const visibleTasks = hide ? course.customTasks.filter(t => !t.completed) : course.customTasks;
+  const hiddenTCount = course.customTasks.length - visibleTasks.length;
+
+  html += visibleTasks.map(t => `
+    <div class="task-row ${t.completed ? 'checked' : ''}" data-task-id="${t.id}" onclick="toggleTask('${course.id}','${t.id}')">
+      <div class="task-check">${CHECK_SVG}</div>
+      <span class="task-label">${escHtml(t.label)}</span>
+      <button class="task-delete" onclick="deleteTask(event,'${course.id}','${t.id}')">${TRASH_SVG}</button>
+    </div>`).join('');
+
+  if (hiddenTCount > 0) {
+    html += `<p class="hidden-notice">${hiddenTCount} completed task${hiddenTCount !== 1 ? 's' : ''} hidden</p>`;
+  }
+
+  html += `
+    <button class="add-task-btn" onclick="openAddTask('${course.id}')">
+      ${PLUS_SVG} Add task
+    </button>`;
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+
+function openCourse(id) {
+  state.view = 'detail';
+  state.courseId = id;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function goBack() {
+  state.view = 'list';
+  state.courseId = null;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function toggleHide() {
+  state.hideCompleted = !state.hideCompleted;
+  render();
+}
+
+// ─── Toggle actions ───────────────────────────────────────────────────────────
+
+function toggleItem(courseId, weekNum, itemId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  item.done = !item.done;
+  save(state.courses);
+
+  if (state.hideCompleted && item.done) { render(); return; }
+  const row = document.querySelector(`[data-item-id="${itemId}"]`);
+  if (row) {
+    row.classList.toggle('checked', item.done);
+    row.classList.add('just-checked');
+    setTimeout(() => row.classList.remove('just-checked'), 300);
+  }
+}
+
+function toggleTask(courseId, taskId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const task   = course.customTasks.find(t => t.id === taskId);
+  task.completed = !task.completed;
+  save(state.courses);
+
+  if (state.hideCompleted && task.completed) { render(); return; }
+  const row = document.querySelector(`[data-task-id="${taskId}"]`);
+  if (row) {
+    row.classList.toggle('checked', task.completed);
+    row.classList.add('just-checked');
+    setTimeout(() => row.classList.remove('just-checked'), 300);
+  }
+}
+
+function deleteTask(evt, courseId, taskId) {
+  evt.stopPropagation();
+  const course = state.courses.find(c => c.id === courseId);
+  course.customTasks = course.customTasks.filter(t => t.id !== taskId);
+  save(state.courses);
+  render();
+}
+
+// ─── Add week ─────────────────────────────────────────────────────────────────
+
+function addWeek(courseId) {
+  const course   = state.courses.find(c => c.id === courseId);
+  const nextNum  = course.weeks.length + 1;
+  const totalLec = countType(course, 'lecture');
+  const totalEx  = countType(course, 'exercise');
+  const slots    = course.lectureSlots || [];
+  const items    = [];
+
+  for (let i = 0; i < course.weeklyLectures; i++) {
+    let date = null;
+    if (slots[i] && slots[i].firstDate) {
+      date = addDays(slots[i].firstDate, (nextNum - 1) * 7);
+    }
+    const duration = slots[i] ? (slots[i].duration || 0) : 0;
+    items.push({ id: uid(), type: 'lecture',  label: `Lecture ${totalLec + i + 1}`,  done: false, date, duration, minutesDone: 0 });
+  }
+  for (let i = 0; i < course.weeklyExercises; i++) {
+    items.push({ id: uid(), type: 'exercise', label: `Exercise ${totalEx + i + 1}`, done: false, dueDate: null, pct: 0 });
+  }
+
+  course.weeks.push({ num: nextNum, items });
+  save(state.courses);
+  render();
+  setTimeout(() => {
+    const first = document.querySelector('.week-section');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+}
+
+// ─── Exercise due date ────────────────────────────────────────────────────────
+
+function openSetExerciseDate(evt, courseId, weekNum, itemId) {
+  evt.stopPropagation();
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+
+  const clearBtn = item.dueDate
+    ? `<button class="btn-danger" onclick="clearExerciseDate('${courseId}',${weekNum},'${itemId}')">Remove Date</button>`
+    : '';
+
+  openOverlay(`
+    <div class="sheet-title">Due Date</div>
+    <div class="field">
+      <label>${escHtml(item.label)}</label>
+      <input id="f-due" type="date" value="${item.dueDate || ''}"/>
+    </div>
+    <button class="btn-primary" onclick="saveExerciseDate('${courseId}',${weekNum},'${itemId}')">Save</button>
+    ${clearBtn}
+  `);
+}
+
+function saveExerciseDate(courseId, weekNum, itemId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  item.dueDate = document.getElementById('f-due').value || null;
+  save(state.courses);
+  closeOverlay();
+  render();
+}
+
+function clearExerciseDate(courseId, weekNum, itemId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  item.dueDate = null;
+  save(state.courses);
+  closeOverlay();
+  render();
+}
+
+// ─── Modals ───────────────────────────────────────────────────────────────────
+
+function openOverlay(html) {
+  document.getElementById('sheet-content').innerHTML = html;
+  const ov = document.getElementById('overlay');
+  ov.classList.add('open');
+  ov.onclick = e => { if (e.target === ov) closeOverlay(); };
+  setTimeout(() => {
+    const first = document.querySelector('#sheet input, #sheet textarea');
+    if (first) first.focus();
+  }, 250);
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// Build lecture slot date fields HTML
+function buildLectureSlotFields(count, existingSlots) {
+  if (count <= 0) return '';
+  let html = `<div class="lecture-slots-section"><div class="lecture-slots-title">Per-lecture settings</div>`;
+  for (let i = 0; i < count; i++) {
+    const dateVal = (existingSlots && existingSlots[i] && existingSlots[i].firstDate) ? existingSlots[i].firstDate : '';
+    const durVal  = (existingSlots && existingSlots[i] && existingSlots[i].duration)  ? existingSlots[i].duration  : '';
+    html += `<div class="field-row" style="grid-template-columns:1fr auto">
+      <div class="field">
+        <label>Lecture ${i + 1} — first date</label>
+        <input class="f-lec-date" type="date" value="${dateVal}"/>
+      </div>
+      <div class="field" style="width:90px">
+        <label>Min</label>
+        <input class="f-lec-dur" type="number" min="0" max="600" placeholder="0" value="${durVal}"/>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// Called when user changes the lectures/week number in the form
+function updateLectureSlots(n) {
+  n = Math.max(0, Math.min(20, parseInt(n) || 0));
+  const container = document.getElementById('lecture-slots');
+  if (!container) return;
+  // Preserve existing entered values
+  const dateEls = Array.from(container.querySelectorAll('.f-lec-date'));
+  const durEls  = Array.from(container.querySelectorAll('.f-lec-dur'));
+  const existing = dateEls.map((el, i) => ({
+    firstDate: el.value || null,
+    duration:  parseInt(durEls[i] && durEls[i].value) || 0
+  }));
+  container.innerHTML = buildLectureSlotFields(n, existing);
+}
+
+function openAddCourse() {
+  openOverlay(`
+    <div class="sheet-title">Add Course</div>
+    <div class="field">
+      <label>Course Name</label>
+      <input id="f-name" type="text" placeholder="e.g. Linear Algebra" maxlength="80"/>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Lectures / week</label>
+        <input id="f-lec" type="number" min="0" max="20" value="0" oninput="updateLectureSlots(this.value)"/>
+      </div>
+      <div class="field">
+        <label>Exercises / week</label>
+        <input id="f-ex" type="number" min="0" max="20" value="0"/>
+      </div>
+    </div>
+    <div id="lecture-slots"></div>
+    <p class="field-hint" style="margin-bottom:16px">These define how many items are generated each time you add a new week. Set a first date and duration (min) for each lecture slot.</p>
+    <button class="btn-primary" onclick="saveCourse(null)">Add Course</button>
+  `);
+}
+
+function openEditCourse(courseId) {
+  const c = state.courses.find(x => x.id === courseId);
+  const slotFields = buildLectureSlotFields(c.weeklyLectures, c.lectureSlots);
+  openOverlay(`
+    <div class="sheet-title">Edit Course</div>
+    <div class="field">
+      <label>Course Name</label>
+      <input id="f-name" type="text" value="${escAttr(c.name)}" maxlength="80"/>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Lectures / week</label>
+        <input id="f-lec" type="number" min="0" max="20" value="${c.weeklyLectures}" oninput="updateLectureSlots(this.value)"/>
+      </div>
+      <div class="field">
+        <label>Exercises / week</label>
+        <input id="f-ex" type="number" min="0" max="20" value="${c.weeklyExercises}"/>
+      </div>
+    </div>
+    <div id="lecture-slots">${slotFields}</div>
+    <p class="field-hint" style="margin-bottom:16px">Changing these only affects future weeks — existing weeks are untouched.</p>
+    <button class="btn-primary" onclick="saveCourse('${courseId}')">Save Changes</button>
+    <button class="btn-danger" onclick="deleteCourse('${courseId}')">Delete Course</button>
+  `);
+}
+
+function saveCourse(courseId) {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+  const lec = Math.max(0, Math.min(20, parseInt(document.getElementById('f-lec').value) || 0));
+  const ex  = Math.max(0, Math.min(20, parseInt(document.getElementById('f-ex').value)  || 0));
+
+  const dateEls = Array.from(document.querySelectorAll('.f-lec-date'));
+  const durEls  = Array.from(document.querySelectorAll('.f-lec-dur'));
+  const lectureSlots = dateEls.map((el, i) => ({
+    firstDate: el.value || null,
+    duration:  Math.max(0, Math.min(600, parseInt(durEls[i] && durEls[i].value) || 0))
+  }));
+  // Pad/trim to match lec count
+  while (lectureSlots.length < lec) lectureSlots.push({ firstDate: null, duration: 0 });
+  lectureSlots.splice(lec);
+
+  if (courseId) {
+    const course = state.courses.find(c => c.id === courseId);
+    course.name = name;
+    course.weeklyLectures  = lec;
+    course.weeklyExercises = ex;
+    course.lectureSlots    = lectureSlots;
+  } else {
+    state.courses.push({
+      id: uid(), name,
+      weeklyLectures: lec, weeklyExercises: ex,
+      lectureSlots,
+      weeks: [],
+      customTasks: []
+    });
+  }
+
+  save(state.courses);
+  closeOverlay();
+  render();
+}
+
+function deleteCourse(courseId) {
+  state.courses = state.courses.filter(c => c.id !== courseId);
+  save(state.courses);
+  closeOverlay();
+  state.view = 'list';
+  state.courseId = null;
+  render();
+}
+
+function openAddTask(courseId) {
+  openOverlay(`
+    <div class="sheet-title">Add Task</div>
+    <div class="field">
+      <label>Task Description</label>
+      <input id="f-task" type="text" placeholder="e.g. Submit lab report" maxlength="120"/>
+    </div>
+    <button class="btn-primary" onclick="saveTask('${courseId}')">Add Task</button>
+  `);
+}
+
+function saveTask(courseId) {
+  const label = document.getElementById('f-task').value.trim();
+  if (!label) { document.getElementById('f-task').focus(); return; }
+  const course = state.courses.find(c => c.id === courseId);
+  course.customTasks.push({ id: uid(), label, completed: false });
+  save(state.courses);
+  closeOverlay();
+  render();
+}
+
+// ─── Lecture minutes progress ─────────────────────────────────────────────────
+
+function openSetLectureProgress(evt, courseId, weekNum, itemId) {
+  evt.stopPropagation();
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  const dur    = item.duration || 0;
+  openOverlay(`
+    <div class="sheet-title">Lecture Progress</div>
+    <div class="field">
+      <label>${escHtml(item.label)} — minutes watched</label>
+      <input id="f-mins" type="number" min="0" max="${dur || 9999}" value="${item.minutesDone || 0}"/>
+      ${dur > 0 ? `<p class="field-hint">Total lecture length: ${dur} min</p>` : ''}
+    </div>
+    <button class="btn-primary" onclick="saveLectureProgress('${courseId}',${weekNum},'${itemId}')">Save</button>
+  `);
+}
+
+function saveLectureProgress(courseId, weekNum, itemId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  const dur = item.duration || 0;
+  const val = Math.max(0, parseInt(document.getElementById('f-mins').value) || 0);
+  item.minutesDone = dur > 0 ? Math.min(val, dur) : val;
+  save(state.courses);
+  closeOverlay();
+  render();
+}
+
+// ─── Exercise percentage progress ─────────────────────────────────────────────
+
+function openSetExercisePct(evt, courseId, weekNum, itemId) {
+  evt.stopPropagation();
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  openOverlay(`
+    <div class="sheet-title">Exercise Progress</div>
+    <div class="field">
+      <label>${escHtml(item.label)} — completion %</label>
+      <input id="f-pct" type="number" min="0" max="100" value="${item.pct || 0}"/>
+      <p class="field-hint">Enter a value from 0 to 100</p>
+    </div>
+    <button class="btn-primary" onclick="saveExercisePct('${courseId}',${weekNum},'${itemId}')">Save</button>
+  `);
+}
+
+function saveExercisePct(courseId, weekNum, itemId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const week   = course.weeks.find(w => w.num === weekNum);
+  const item   = week.items.find(i => i.id === itemId);
+  item.pct = Math.max(0, Math.min(100, parseInt(document.getElementById('f-pct').value) || 0));
+  save(state.courses);
+  closeOverlay();
+  render();
+}
+
+// ─── Escape helpers ───────────────────────────────────────────────────────────
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escAttr(s) { return escHtml(s); }
+
+// ─── FAB ──────────────────────────────────────────────────────────────────────
+
+document.getElementById('fab').addEventListener('click', () => {
+  if (state.view === 'list') openAddCourse();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeOverlay();
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+render();
+</script>
+</body>
+</html>
