@@ -1,5 +1,5 @@
 // OpenSlots Service Worker — network-first for API, cache-first for shell
-const CACHE = 'openslots-v10';
+const CACHE = 'openslots-v11';
 
 // Must be cached for offline to work — install fails if any of these fail
 const SHELL_CORE = [
