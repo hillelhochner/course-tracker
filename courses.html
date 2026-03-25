@@ -664,6 +664,8 @@ function renderDetail() {
     if (weeksDesc.length === 0) {
       html += `<p style="font-size:13px;color:var(--text-dimmer);padding:12px 0 4px;text-align:center">No weeks added yet — tap the button above.</p>`;
     } else {
+      let lecCount = 0;
+      let exCount = 0;
       html += weeksDesc.map(week => {
         // ── Skipped week ───────────────────────────────────────────────────
         if (week.skipped) {
@@ -707,13 +709,14 @@ function renderDetail() {
 
           // ── Lecture ─────────────────────────────────────────────────────
           if (item.type === 'lecture') {
+            const lecNum = ++lecCount;
             const dateLine = item.date
               ? `<span class="task-date">${CAL_SVG} ${formatDate(item.date)}</span>`
               : '';
             const dur = item.duration || 0;
             const minDone = item.minutesDone || 0;
             const lecProgBar = (() => {
-              const p = dur > 0 ? Math.min(100, Math.round((minDone / dur) * 100)) : 0;
+              const p = item.done ? 100 : (dur > 0 ? Math.min(100, Math.round((minDone / dur) * 100)) : 0);
               const text = dur > 0 ? `${minDone} / ${dur} min` : `${minDone} min`;
               return `<button class="item-prog" onclick="openSetLectureProgress(event,'${course.id}',${week.num},'${item.id}')">
                 <div class="item-prog-track"><div class="item-prog-fill-lec" style="width:${p}%"></div></div>
@@ -724,7 +727,7 @@ function renderDetail() {
               <div class="task-row ${item.done ? 'checked' : ''}" data-item-id="${item.id}" onclick="toggleItem('${course.id}',${week.num},'${item.id}')">
                 <div class="task-check">${CHECK_SVG}</div>
                 <div class="task-info">
-                  <span class="task-label">${escHtml(item.label)}</span>
+                  <span class="task-label">Lecture ${lecNum}</span>
                   ${dateLine}
                   ${lecProgBar}
                 </div>
@@ -734,10 +737,11 @@ function renderDetail() {
           }
 
           // ── Exercise ────────────────────────────────────────────────────
+          const exNum = ++exCount;
           const dueLine = item.dueDate
             ? `<button class="due-date-btn has-date" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">${CAL_SVG} ${formatDate(item.dueDate)}</button>`
             : `<button class="due-date-btn" onclick="openSetExerciseDate(event,'${course.id}',${week.num},'${item.id}')">+ due date</button>`;
-          const exPct = item.pct || 0;
+          const exPct = item.done ? 100 : (item.pct || 0);
           const exProgBar = `<button class="item-prog" onclick="openSetExercisePct(event,'${course.id}',${week.num},'${item.id}')">
             <div class="item-prog-track"><div class="item-prog-fill-ex" style="width:${exPct}%"></div></div>
             <span class="item-prog-text">${exPct}%</span>
@@ -746,7 +750,7 @@ function renderDetail() {
             <div class="task-row ${item.done ? 'checked' : ''}" data-item-id="${item.id}" onclick="toggleItem('${course.id}',${week.num},'${item.id}')">
               <div class="task-check">${CHECK_SVG}</div>
               <div class="task-info">
-                <span class="task-label">${escHtml(item.label)}</span>
+                <span class="task-label">Exercise ${exNum}</span>
                 ${dueLine}
                 ${exProgBar}
               </div>
@@ -824,6 +828,10 @@ function toggleItem(courseId, weekNum, itemId) {
   const week   = course.weeks.find(w => w.num === weekNum);
   const item   = week.items.find(i => i.id === itemId);
   item.done = !item.done;
+  // When marking a lecture done, fill minutes to full duration
+  if (item.type === 'lecture' && item.done && (item.duration || 0) > 0) {
+    item.minutesDone = item.duration;
+  }
   save(state.courses);
 
   if (state.hideCompleted && item.done) { render(); return; }

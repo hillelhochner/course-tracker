@@ -3,6 +3,7 @@
   "short_name": "Courses",
   "description": "Track your university courses, lectures, exercises, and tasks.",
   "start_url": "/courses.html",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
